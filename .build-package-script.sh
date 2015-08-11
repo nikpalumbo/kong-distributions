@@ -246,7 +246,8 @@ rockspec_version=${rockspec_basename#"kong-"}
 sed -i.bak s@${OUT}@@g $OUT/usr/local/bin/kong
 rm $OUT/usr/local/bin/kong.bak
 
-# Create Kong folder and default logging files
+# Create Kong folder and default logging files, and SSL folder
+mkdir -p $OUT/usr/local/kong/ssl
 mkdir -p $OUT/usr/local/kong/logs
 touch $OUT/usr/local/kong/logs/access.log
 touch $OUT/usr/local/kong/logs/error.log
