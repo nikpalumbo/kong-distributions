@@ -247,10 +247,7 @@ sed -i.bak s@${OUT}@@g $OUT/usr/local/bin/kong
 rm $OUT/usr/local/bin/kong.bak
 
 # Create Kong folder and default logging files, and SSL folder
-mkdir -p $OUT/usr/local/kong/ssl
-mkdir -p $OUT/usr/local/kong/logs
-touch $OUT/usr/local/kong/logs/access.log
-touch $OUT/usr/local/kong/logs/error.log
+mkdir -p $OUT/usr/local/kong
 
 # Copy the conf to /etc/kong
 post_install_script=$(mktemp $MKTEMP_POSTSCRIPT_CONF)
@@ -258,7 +255,7 @@ echo "#!/bin/sh
 mkdir -p /etc/kong
 cp /usr/local/lib/luarocks/rocks/kong/$rockspec_version/conf/kong.yml /etc/kong/kong.yml
 echo \"user=root\" > /etc/dnsmasq.conf
-chmod -R 755 /usr/local/kong/
+chmod -R 777 /usr/local/kong/
 " > $post_install_script
 
 ##############################################################
