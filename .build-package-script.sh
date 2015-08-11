@@ -257,7 +257,7 @@ echo "#!/bin/sh
 mkdir -p /etc/kong
 cp /usr/local/lib/luarocks/rocks/kong/$rockspec_version/conf/kong.yml /etc/kong/kong.yml
 echo \"user=root\" > /etc/dnsmasq.conf
-chmod -R 777 /usr/local/kong/
+chmod -R 755 /usr/local/kong/
 " > $post_install_script
 
 ##############################################################
