@@ -31,6 +31,27 @@ Distributions will be placed under the `build-output` folder (should the folder 
 
 **Warning:** **Do not execute** the `.build-package-script.sh` file, it's used internally by the build.
 
+# Release on Bintray
+
+- Help
+
+```shell
+./bintray-release.sh -h
+```
+
+- Releasing every platform:
+
+```shell
+./bintray-release.sh -u [BINTRAY USERNAME] -k [BINTRAY KEY] -v [KONG VERSION] -p all
+```
+
+- Releasing for specific platforms:
+
+```shell
+./bintray-release.sh -u [BINTRAY USERNAME] -k [BINTRAY KEY] -v [KONG VERSION] -p centos:5 debian:8
+```
+
+
 ## Supported Platforms
 
 - `all`
