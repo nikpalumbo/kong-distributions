@@ -123,7 +123,7 @@ fi
 
 # Download OpenSSL
 cd $TMP
-wget https://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz -O openssl-$OPENSSL_VERSION.tar.gz
+wget http://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz -O openssl-$OPENSSL_VERSION.tar.gz
 tar xzf openssl-$OPENSSL_VERSION.tar.gz
 if [ "$(uname)" = "Darwin" ]; then # Checking if OS X
   export KERNEL_BITS=64 # This sets the right OpenSSL variable for OS X
