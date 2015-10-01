@@ -115,6 +115,7 @@ function echoResponse {
   fi    
 }
 
+KONG_MAJOR_VERSION=`echo $KONG_VERSION | sed 's/\([0-9].[0-9]\).*/\1.x/'`
 function createRepo {
   REPO_NAME=$1
   REPO_TYPE=$2
@@ -122,20 +123,17 @@ function createRepo {
   RESPONSE=$(curl -X GET --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/repos/mashape/$REPO_NAME")
   STATUS=$(echo $RESPONSE | awk -F"=" '{print $2}')
   if [[ "$STATUS" -ne "200" ]]; then
-    echo "creating new repo $REPO_NAME...\n"
-    RESPONSE=$(curl -X POST --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/repos/mashape/$REPO_NAME" -H "Content-type: application/json" -d '{ "type": "'$REPO_TYPE'", "private": false, "premium": false, "desc": "Installation package for Kong​", "labels":["kong"] }')
+    RESPONSE=$(curl -X POST --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/repos/mashape/$REPO_NAME" -H "Content-type: application/json" -d '{ "type": "'$REPO_TYPE'", "private": false, "premium": false, "desc": "Repo for kong​-'$KONG_MAJOR_VERSION'", "labels": [ "Kong", "Mashape" ] }')
     STATUS=$(echo $RESPONSE | awk -F"=" '{print $2}')
     MESSAGE=STATUS=$(echo $RESPONSE | awk -F"=" '{print $1}')
     if [[ "$STATUS" == "201" ]]; then
-      echo "creating new package $PACKAGE_NAME...\n"
-      RESPONSE=$(curl -X POST --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/packages/mashape/$REPO_NAME" -H "Content-type: application/json" -d '{ "name": "'$PACKAGE_NAME'", "desc": "", "labels": [""], "licenses": ["Apache-2.0"], "custom_licenses": [], "vcs_url": "https://github.com/Mashape/kong/",  "website_url": "https://getkong.org/", "issue_tracker_url": "https://github.com/Mashape/kong/issues",  "github_repo": "mashape/kong", "github_release_notes_file": "CHANGELOG.md",  "public_download_numbers": false, "public_stats": true }')
+      RESPONSE=$(curl -X POST --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/packages/mashape/$REPO_NAME" -H "Content-type: application/json" -d '{ "name": "'$PACKAGE_NAME'", "desc": "", "labels": [ "kong", "kong '$REPO_TYPE'" ], "licenses": ["Apache-2.0"], "custom_licenses": [], "vcs_url": "https://github.com/Mashape/kong/",  "website_url": "https://getkong.org/", "issue_tracker_url": "https://github.com/Mashape/kong/issues",  "github_repo": "mashape/kong", "github_release_notes_file": "CHANGELOG.md",  "public_download_numbers": false, "public_stats": true }')
       STATUS=$(echo $RESPONSE | awk -F"=" '{print $2}') 
     fi  
   fi  
 }
 
 # Start publishisng
-KONG_MAJOR_VERSION=`echo $KONG_VERSION | sed 's/\([0-9].[0-9]\).*/\1.x/'`
 for i in "${platforms_to_release[@]}"
 do
   echo "Releasing $i"	
@@ -158,7 +156,7 @@ do
       ALL=_all
       OS=$(echo $i | awk -F":" '{print $1}')
 	    if [ -e $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb ]; then
-        echo $(createRepo "kong-$OS-$VERSION-$KONG_MAJOR_VERSION" "debian" "$OS-$VERSION")
+        REPO_STATUS=$(createRepo "kong-$OS-$VERSION-$KONG_MAJOR_VERSION" "debian" "$OS-$VERSION")
         RESPONSE=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-$OS-$VERSION-$KONG_MAJOR_VERSION/$OS-$VERSION/$KONG_VERSION/dists/kong-$KONG_VERSION.$VERSION$ALL.deb;deb_distribution=$VERSION;deb_component=main;deb_architecture=i386,amd64,noarch;publish=1" -T $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb)
         echo $(echoResponse "$RESPONSE")
       else
