@@ -61,7 +61,7 @@ fi
 #                      Check Arguments                       #
 ##############################################################
 
-supported_platforms=( centos:5 centos:6 centos:7.0.1406 debian:6 debian:7 debian:8 ubuntu:12.04.5 ubuntu:14.04.2 ubuntu:15.04 osx )
+supported_platforms=( centos:5 centos:6 centos:7 debian:6 debian:7 debian:8 ubuntu:12.04.5 ubuntu:14.04.2 ubuntu:15.04 osx )
 platforms_to_build=( )
 
 for var in "$ARG_PLATFORMS"
@@ -105,6 +105,7 @@ do
   if [[ "$i" == "osx" ]]; then
     /bin/bash $DIR/.build-package-script.sh ${KONG_VERSION}
   else
+    docker pull $i # Because of https://github.com/CentOS/CentOS-Dockerfiles/issues/33
     docker run -v $DIR/:/build-data $i /bin/bash -c "/build-data/.build-package-script.sh ${KONG_VERSION}"
   fi
   if [ $? -ne 0 ]; then

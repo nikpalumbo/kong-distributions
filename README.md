@@ -57,7 +57,7 @@ Distributions will be placed under the `build-output` folder (should the folder 
 - `all`
 - `centos:5`
 - `centos:6`
-- `centos:7.0.1406`
+- `centos:7`
 - `debian:6`
 - `debian:7`
 - `debian:8`
