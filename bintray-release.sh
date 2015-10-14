@@ -110,10 +110,27 @@ function echoResponse {
   [[ "$#" != 1 ]] && exit 1
   STATUS=$(echo $1 | awk -F"=" '{print $2}')
   MESSAGE=$(echo $1 | awk -F"=" '{print $1}') 
-  if [[ "$STATUS" -ne "201" ]]
-    then
-      echo $MESSAGE   
+  if [[ "$STATUS" -ne "201" ]]; then
+    echo $MESSAGE   
   fi    
+}
+
+KONG_MAJOR_VERSION=`echo $KONG_VERSION | sed 's/\([0-9].[0-9]\).*/\1.x/'`
+function createRepo {
+  REPO_NAME=$1
+  REPO_TYPE=$2
+  PACKAGE_NAME=$3
+  RESPONSE=$(curl -X GET --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/repos/mashape/$REPO_NAME")
+  STATUS=$(echo $RESPONSE | awk -F"=" '{print $2}')
+  if [[ "$STATUS" -ne "200" ]]; then
+    RESPONSE=$(curl -X POST --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/repos/mashape/$REPO_NAME" -H "Content-type: application/json" -d '{ "type": "'$REPO_TYPE'", "private": false, "premium": false, "desc": "Repo for kong​-'$KONG_MAJOR_VERSION'", "labels": [ "Kong", "Mashape" ] }')
+    STATUS=$(echo $RESPONSE | awk -F"=" '{print $2}')
+    MESSAGE=STATUS=$(echo $RESPONSE | awk -F"=" '{print $1}')
+    if [[ "$STATUS" == "201" ]]; then
+      RESPONSE=$(curl -X POST --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/packages/mashape/$REPO_NAME" -H "Content-type: application/json" -d '{ "name": "'$PACKAGE_NAME'", "desc": "", "labels": [ "kong", "kong '$REPO_TYPE'" ], "licenses": ["Apache-2.0"], "custom_licenses": [], "vcs_url": "https://github.com/Mashape/kong/",  "website_url": "https://getkong.org/", "issue_tracker_url": "https://github.com/Mashape/kong/issues",  "github_repo": "mashape/kong", "github_release_notes_file": "CHANGELOG.md",  "public_download_numbers": false, "public_stats": true }')
+      STATUS=$(echo $RESPONSE | awk -F"=" '{print $2}') 
+    fi  
+  fi  
 }
 
 # Start publishisng
@@ -126,9 +143,10 @@ do
     case $i in
     centos:*)
       VERSION=$(echo $i | awk -F":" '{print $2}')
-      if [ -e $DIR/build-output/kong-$KONG_VERSION.el$VERSION.noarch.rpm ] ; then
-        response=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-rpm-el$VERSION/rpm-el$VERSION/$KONG_VERSION/$KONG_VERSION/kong-$KONG_VERSION.el$VERSION.noarch.rpm?publish=1" -T $DIR/build-output/kong-$KONG_VERSION.el$VERSION.noarch.rpm)
-        echo $(echoResponse "$response")
+      if [ -e $DIR/build-output/kong-$KONG_VERSION.el$VERSION.noarch.rpm ]; then
+        echo $(createRepo "kong-rpm-el$VERSION-$KONG_MAJOR_VERSION" "rpm" "rpm-el$VERSION")
+        RESPONSE=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-rpm-el$VERSION-$KONG_MAJOR_VERSION/rpm-el$VERSION/$KONG_VERSION/$KONG_VERSION/kong-$KONG_VERSION.el$VERSION.noarch.rpm?publish=1" -T $DIR/build-output/kong-$KONG_VERSION.el$VERSION.noarch.rpm)
+        echo $(echoResponse "$RESPONSE")
       else
         echo "Artifact $DIR/build-output/kong-$KONG_VERSION.el$VERSION.noarch.rpm not found"    
       fi   
@@ -137,9 +155,10 @@ do
       VERSION=$(get "$i")
       ALL=_all
       OS=$(echo $i | awk -F":" '{print $1}')
-	  if [ -e $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb ] ; then
-        response=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-$OS-$VERSION/$OS-$VERSION/$KONG_VERSION/$KONG_VERSION/kong-$KONG_VERSION.$VERSION$ALL.deb;deb_distribution=$VERSION;deb_component=main;deb_architecture=noarch;publish=1" -T $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb)
-        echo $(echoResponse "$response")
+	    if [ -e $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb ]; then
+        REPO_STATUS=$(createRepo "kong-$OS-$VERSION-$KONG_MAJOR_VERSION" "debian" "$OS-$VERSION")
+        RESPONSE=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-$OS-$VERSION-$KONG_MAJOR_VERSION/$OS-$VERSION/$KONG_VERSION/dists/kong-$KONG_VERSION.$VERSION$ALL.deb;deb_distribution=$VERSION;deb_component=main;deb_architecture=i386,amd64,noarch;publish=1" -T $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb)
+        echo $(echoResponse "$RESPONSE")
       else
         echo "Artifact $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb not found" 
       fi   
