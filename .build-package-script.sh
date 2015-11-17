@@ -41,6 +41,7 @@ LUA_MAKE=""
 OPENRESTY_CONFIGURE=""
 FPM_PARAMS=""
 FINAL_FILE_NAME=""
+LUAROCKS_PARAMS=""
 
 FINAL_BUILD_OUTPUT="/build-data/build-output"
 
@@ -54,6 +55,7 @@ if [ "$(uname)" = "Darwin" ]; then
   MKTEMP_POSTSCRIPT_CONF="-t post_install_script.sh"
   FPM_PARAMS="--osxpkg-identifier-prefix org.kong"
   FINAL_FILE_NAME_SUFFIX=".osx.pkg"
+  LUAROCKS_PARAMS="OPENSSL_DIR=/usr/local/opt/openssl OPENSSL_LIBDIR=/usr/local/opt/openssl/lib"
 
   FINAL_BUILD_OUTPUT="$DIR/build-output"
 elif hash yum 2>/dev/null; then
@@ -235,7 +237,7 @@ export LUA_PATH=${OUT}/usr/local/share/lua/5.1/?.lua
 cd $TMP
 git clone --branch $KONG_BRANCH --depth 1 https://github.com/Mashape/kong.git
 cd kong
-$OUT/usr/local/bin/luarocks make kong-*.rockspec
+$OUT/usr/local/bin/luarocks make kong-*.rockspec $LUAROCKS_PARAMS
 
 # Extract the version from the rockspec file
 rockspec_filename=`basename $TMP/kong/kong-*.rockspec`

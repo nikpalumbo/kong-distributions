@@ -99,8 +99,8 @@ fi
 rm -rf $DIR/build-output
 
 # Deleting Docker images
-docker rm -f $(docker ps -a -q)
-docker rmi -f $(docker images -q)
+docker rm -f $(docker ps -a -q) || true
+docker rmi -f $(docker images -q) || true
 
 # Start build
 for i in "${platforms_to_build[@]}"
