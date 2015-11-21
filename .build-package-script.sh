@@ -32,6 +32,7 @@ LUAROCKS_VERSION=2.2.2
 OPENRESTY_VERSION=1.9.3.1
 DNSMASQ_VERSION=2.72
 OPENSSL_VERSION=1.0.2d
+SERF_VERSION=0.6.4
 
 # Variables to be used in the build process
 PACKAGE_TYPE=""
@@ -60,12 +61,14 @@ if [ "$(uname)" = "Darwin" ]; then
   FINAL_BUILD_OUTPUT="$DIR/build-output"
 elif hash yum 2>/dev/null; then
   yum -y install epel-release
-  yum -y install wget tar make curl ldconfig gcc perl pcre-devel openssl-devel ldconfig unzip git rpm-build ncurses-devel which lua-$LUA_VERSION lua-devel-$LUA_VERSION gpg
+  yum -y install wget tar make curl ldconfig gcc perl pcre-devel openssl-devel ldconfig unzip git rpm-build ncurses-devel which lua-$LUA_VERSION lua-devel-$LUA_VERSION gpg pkgconfig
 
   CENTOS_VERSION=`cat /etc/redhat-release | grep -oE '[0-9]+\.[0-9]+'`
   FPM_PARAMS="-d 'epel-release' -d 'sudo' -d 'nc' -d 'lua = $LUA_VERSION' -d 'openssl' -d 'pcre' -d 'dnsmasq'"
 
   if [[ ${CENTOS_VERSION%.*} == "5" ]]; then
+    yum -y install e2fsprogs-devel
+
     # Install Ruby for fpm
     cd $TMP
     wget http://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.2.tar.gz
@@ -76,6 +79,7 @@ elif hash yum 2>/dev/null; then
     make install
     gem update --system
   else
+    yum -y install libuuid-devel
     yum -y install ruby ruby-devel rubygems
     FPM_PARAMS=$FPM_PARAMS" -d 'openssl098e'"
   fi
@@ -84,7 +88,7 @@ elif hash yum 2>/dev/null; then
   LUA_MAKE="linux"
   FINAL_FILE_NAME_SUFFIX=".el${CENTOS_VERSION%.*}.noarch.rpm"
 elif hash apt-get 2>/dev/null; then
-  apt-get update && apt-get -y install wget curl gnupg tar make gcc libreadline-dev libncurses5-dev libpcre3-dev libssl-dev perl unzip git lua${LUA_VERSION%.*} liblua${LUA_VERSION%.*}-0-dev lsb-release
+  apt-get update && apt-get -y install wget curl gnupg tar make gcc libreadline-dev libncurses5-dev libpcre3-dev libssl-dev perl unzip git lua${LUA_VERSION%.*} liblua${LUA_VERSION%.*}-0-dev lsb-release uuid-dev
 
   DEBIAN_VERSION=`lsb_release -cs`
   if [[ "$DEBIAN_VERSION" == "squeeze" ]] || [[ "$DEBIAN_VERSION" == "precise" ]]; then
@@ -232,6 +236,18 @@ rocks_trees = {
 
 export LUAROCKS_CONFIG=$rocks_config
 export LUA_PATH=${OUT}/usr/local/share/lua/5.1/?.lua
+
+# Install Serf
+cd $TMP
+mkdir -p $OUT/usr/sbin
+if [ "$(uname)" = "Darwin" ]; then
+  wget https://releases.hashicorp.com/serf/${SERF_VERSION}/serf_${SERF_VERSION}_darwin_386.zip --no-check-certificate
+  unzip serf_${SERF_VERSION}_darwin_386.zip
+else
+  wget https://releases.hashicorp.com/serf/${SERF_VERSION}/serf_${SERF_VERSION}_linux_386.zip --no-check-certificate
+  unzip serf_${SERF_VERSION}_linux_386.zip
+fi
+cp serf $OUT/usr/sbin
 
 # Install Kong
 cd $TMP
