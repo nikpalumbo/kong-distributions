@@ -42,14 +42,22 @@ if [ $? -ne 0 ]; then
 fi
 
 # Set the testing Cassandra
-$SUDO sed -i.bak "s@localhost@$TEST_CASSANDRA_HOST@g" $KONG_CONF
+value=`cat $KONG_CONF`
+
+$SUDO cat > $KONG_CONF <<- EOM
+databases_available:
+  cassandra:
+    contact_points:
+      - "${TEST_CASSANDRA_HOST}"
+${value}
+EOM
 
 kong start
 if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Install curl
+# Install curl later to make sure the default dependencies are enough to start kong
 if hash yum 2>/dev/null; then
   yum install -y curl
 elif hash apt-get 2>/dev/null; then
