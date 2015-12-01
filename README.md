@@ -65,3 +65,4 @@ Distributions will be placed under the `build-output` folder (should the folder 
 - `ubuntu:14.04.2`
 - `ubuntu:15.04`
 - `osx`
+- `aws`

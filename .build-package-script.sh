@@ -9,6 +9,11 @@ if [ -z "$1" ]; then
 fi
 KONG_BRANCH=$1
 
+IS_AWS=false
+if [[ -n "$2" && $2 = "-aws" ]]; then
+  IS_AWS=true
+fi
+
 # Preparing environment
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 echo "Current directory is: "$DIR
@@ -78,6 +83,10 @@ elif hash yum 2>/dev/null; then
     make
     make install
     gem update --system
+
+    if [[ -n "$1" && $1 = "-aws" ]]; then
+      FPM_PARAMS=$FPM_PARAMS" -d 'openssl098e'"
+    fi
   else
     yum -y install libuuid-devel
     yum -y install ruby ruby-devel rubygems
@@ -86,7 +95,12 @@ elif hash yum 2>/dev/null; then
 
   PACKAGE_TYPE="rpm"
   LUA_MAKE="linux"
-  FINAL_FILE_NAME_SUFFIX=".el${CENTOS_VERSION%.*}.noarch.rpm"
+
+  if [[ -n "$1" && $1 = "-aws" ]]; then
+    FINAL_FILE_NAME_SUFFIX=".aws.rpm"
+  else
+    FINAL_FILE_NAME_SUFFIX=".el${CENTOS_VERSION%.*}.noarch.rpm"
+  fi
 elif hash apt-get 2>/dev/null; then
   apt-get update && apt-get -y install wget curl gnupg tar make gcc libreadline-dev libncurses5-dev libpcre3-dev libssl-dev perl unzip git lua${LUA_VERSION%.*} liblua${LUA_VERSION%.*}-0-dev lsb-release uuid-dev
 

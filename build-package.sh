@@ -61,7 +61,7 @@ fi
 #                      Check Arguments                       #
 ##############################################################
 
-supported_platforms=( centos:5 centos:6 centos:7 debian:6 debian:7 debian:8 ubuntu:12.04.5 ubuntu:14.04.2 ubuntu:15.04 osx )
+supported_platforms=( centos:5 centos:6 centos:7 debian:6 debian:7 debian:8 ubuntu:12.04.5 ubuntu:14.04.2 ubuntu:15.04 osx aws )
 platforms_to_build=( )
 
 for var in "$ARG_PLATFORMS"
@@ -108,6 +108,9 @@ do
   echo "Building for $i"
   if [[ "$i" == "osx" ]]; then
     /bin/bash $DIR/.build-package-script.sh ${KONG_VERSION}
+  elif [[ "$i" == "aws" ]]; then
+    docker pull centos:5
+    docker run -v $DIR/:/build-data $i /bin/bash -c "/build-data/.build-package-script.sh ${KONG_VERSION} -aws"
   else
     docker pull $i # Because of https://github.com/CentOS/CentOS-Dockerfiles/issues/33
     docker run -v $DIR/:/build-data $i /bin/bash -c "/build-data/.build-package-script.sh ${KONG_VERSION}"
@@ -123,6 +126,8 @@ do
     last_file_name=`basename $last_file`
     if [[ "$i" == "osx" ]]; then
       /bin/bash $DIR/.test-package-script.sh $DIR/build-output/$last_file_name
+    if [[ "$i" == "aws" ]]; then
+      echo "TODO: Test on AWS Linux AMI!"
     else
       docker run -v $DIR/:/build-data $i /bin/bash -c "/build-data/.test-package-script.sh /build-data/build-output/$last_file_name"
     fi
