@@ -42,6 +42,8 @@ if [ $? -ne 0 ]; then
 fi
 
 # Set the testing Cassandra
+#$SUDO sed -i.bak "s@localhost@$TEST_CASSANDRA_HOST@g" $KONG_CONF
+
 value=`cat $KONG_CONF`
 
 $SUDO cat > $KONG_CONF <<- EOM

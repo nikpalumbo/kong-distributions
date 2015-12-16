@@ -110,7 +110,7 @@ do
     /bin/bash $DIR/.build-package-script.sh ${KONG_VERSION}
   elif [[ "$i" == "aws" ]]; then
     docker pull centos:5
-    docker run -v $DIR/:/build-data $i /bin/bash -c "/build-data/.build-package-script.sh ${KONG_VERSION} -aws"
+    docker run -v $DIR/:/build-data centos:5 /bin/bash -c "/build-data/.build-package-script.sh ${KONG_VERSION} -aws"
   else
     docker pull $i # Because of https://github.com/CentOS/CentOS-Dockerfiles/issues/33
     docker run -v $DIR/:/build-data $i /bin/bash -c "/build-data/.build-package-script.sh ${KONG_VERSION}"
@@ -126,7 +126,7 @@ do
     last_file_name=`basename $last_file`
     if [[ "$i" == "osx" ]]; then
       /bin/bash $DIR/.test-package-script.sh $DIR/build-output/$last_file_name
-    if [[ "$i" == "aws" ]]; then
+    elif [[ "$i" == "aws" ]]; then
       echo "TODO: Test on AWS Linux AMI!"
     else
       docker run -v $DIR/:/build-data $i /bin/bash -c "/build-data/.test-package-script.sh /build-data/build-output/$last_file_name"

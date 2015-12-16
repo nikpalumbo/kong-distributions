@@ -32,11 +32,11 @@ mkdir -p $TMP
 # Load dependencies versions
 LUA_VERSION=5.1.4
 LUAJIT_VERSION=2.0.4
-PCRE_VERSION=8.36
+PCRE_VERSION=8.37
 LUAROCKS_VERSION=2.2.2
 OPENRESTY_VERSION=1.9.3.1
 DNSMASQ_VERSION=2.72
-OPENSSL_VERSION=1.0.2d
+OPENSSL_VERSION=1.0.2e
 SERF_VERSION=0.6.4
 
 # Variables to be used in the build process
@@ -84,7 +84,7 @@ elif hash yum 2>/dev/null; then
     make install
     gem update --system
 
-    if [[ -n "$1" && $1 = "-aws" ]]; then
+    if [[ $IS_AWS == true ]]; then
       FPM_PARAMS=$FPM_PARAMS" -d 'openssl098e'"
     fi
   else
@@ -96,13 +96,13 @@ elif hash yum 2>/dev/null; then
   PACKAGE_TYPE="rpm"
   LUA_MAKE="linux"
 
-  if [[ -n "$1" && $1 = "-aws" ]]; then
+  if [[ $IS_AWS == true ]]; then
     FINAL_FILE_NAME_SUFFIX=".aws.rpm"
   else
     FINAL_FILE_NAME_SUFFIX=".el${CENTOS_VERSION%.*}.noarch.rpm"
   fi
 elif hash apt-get 2>/dev/null; then
-  apt-get update && apt-get -y install wget curl gnupg tar make gcc libreadline-dev libncurses5-dev libpcre3-dev libssl-dev perl unzip git lua${LUA_VERSION%.*} liblua${LUA_VERSION%.*}-0-dev lsb-release uuid-dev
+  apt-get update && apt-get -y --force-yes install wget curl gnupg tar make gcc libreadline-dev libncurses5-dev libpcre3-dev libssl-dev perl unzip git lua${LUA_VERSION%.*} liblua${LUA_VERSION%.*}-0-dev lsb-release uuid-dev
 
   DEBIAN_VERSION=`lsb_release -cs`
   if [[ "$DEBIAN_VERSION" == "squeeze" ]] || [[ "$DEBIAN_VERSION" == "precise" ]]; then
@@ -116,9 +116,9 @@ elif hash apt-get 2>/dev/null; then
     make install
     gem update --system
   else
-    apt-get install -y ruby ruby-dev
+    apt-get -y --force-yes install ruby ruby-dev
     if ! [[ "$DEBIAN_VERSION" == "trusty" ]]; then
-      apt-get -y install rubygems
+      apt-get -y --force-yes install rubygems
     fi
   fi
 
@@ -288,6 +288,7 @@ mkdir -p /etc/kong
 cp /usr/local/lib/luarocks/rocks/kong/$rockspec_version/conf/kong.yml /etc/kong/kong.yml
 echo \"user=root\" > /etc/dnsmasq.conf
 chmod -R 777 /usr/local/kong/
+chown +rw -R /usr/local/kong/
 " > $post_install_script
 
 ##############################################################
