@@ -22,7 +22,7 @@ elif hash yum 2>/dev/null; then
   yum install -y $PACKAGE_FILE --nogpgcheck
 elif hash apt-get 2>/dev/null; then
   apt-get update
-  dpkg -i $PACKAGE_FILE || apt-get install -y -f
+  dpkg -i $PACKAGE_FILE || apt-get -y --force-yes install -f
 else
   echo "Unsupported platform"
   exit 1
@@ -63,7 +63,8 @@ fi
 if hash yum 2>/dev/null; then
   yum install -y curl
 elif hash apt-get 2>/dev/null; then
-  apt-get install -y curl
+  apt-get -y --force-yes install curl
+  apt-get install --reinstall procps
 fi
 
 if ! [ `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8001/` == "200" ]; then
