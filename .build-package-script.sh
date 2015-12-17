@@ -31,19 +31,20 @@ mkdir -p $TMP
 
 # Load dependencies versions
 LUA_VERSION=5.1.4
-LUAJIT_VERSION=2.0.4
+LUAJIT_VERSION=2.1.0-beta1
 PCRE_VERSION=8.37
 LUAROCKS_VERSION=2.2.2
 OPENRESTY_VERSION=1.9.3.1
 DNSMASQ_VERSION=2.72
 OPENSSL_VERSION=1.0.2e
-SERF_VERSION=0.6.4
+SERF_VERSION=0.7.0
 
 # Variables to be used in the build process
 PACKAGE_TYPE=""
 MKTEMP_LUAROCKS_CONF=""
 MKTEMP_POSTSCRIPT_CONF=""
 LUA_MAKE=""
+LUAJIT_MAKE=""
 OPENRESTY_CONFIGURE=""
 FPM_PARAMS=""
 FINAL_FILE_NAME=""
@@ -69,27 +70,29 @@ elif hash yum 2>/dev/null; then
   yum -y install wget tar make curl ldconfig gcc perl pcre-devel openssl-devel ldconfig unzip git rpm-build ncurses-devel which lua-$LUA_VERSION lua-devel-$LUA_VERSION gpg pkgconfig
 
   CENTOS_VERSION=`cat /etc/redhat-release | grep -oE '[0-9]+\.[0-9]+'`
-  FPM_PARAMS="-d 'epel-release' -d 'sudo' -d 'nc' -d 'lua = $LUA_VERSION' -d 'openssl' -d 'pcre' -d 'dnsmasq'"
+  FPM_PARAMS="-d 'epel-release' -d 'sudo' -d 'nc' -d 'openssl' -d 'pcre' -d 'dnsmasq'"
+
+  # Install Ruby for fpm
+  cd $TMP
+  wget http://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.2.tar.gz
+  tar xvfvz ruby-2.2.2.tar.gz
+  cd ruby-2.2.2
+  ./configure
+  make
+  make install
+  gem update --system
 
   if [[ ${CENTOS_VERSION%.*} == "5" ]]; then
     yum -y install e2fsprogs-devel
 
-    # Install Ruby for fpm
-    cd $TMP
-    wget http://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.2.tar.gz
-    tar xvfvz ruby-2.2.2.tar.gz
-    cd ruby-2.2.2
-    ./configure
-    make
-    make install
-    gem update --system
+    LUAJIT_MAKE="CFLAGS=-std=gnu99"
 
     if [[ $IS_AWS == true ]]; then
       FPM_PARAMS=$FPM_PARAMS" -d 'openssl098e'"
     fi
   else
     yum -y install libuuid-devel
-    yum -y install ruby ruby-devel rubygems
+    #yum -y install ruby ruby-devel rubygems
     FPM_PARAMS=$FPM_PARAMS" -d 'openssl098e'"
   fi
 
@@ -104,27 +107,20 @@ elif hash yum 2>/dev/null; then
 elif hash apt-get 2>/dev/null; then
   apt-get update && apt-get -y --force-yes install wget curl gnupg tar make gcc libreadline-dev libncurses5-dev libpcre3-dev libssl-dev perl unzip git lua${LUA_VERSION%.*} liblua${LUA_VERSION%.*}-0-dev lsb-release uuid-dev
 
-  DEBIAN_VERSION=`lsb_release -cs`
-  if [[ "$DEBIAN_VERSION" == "squeeze" ]] || [[ "$DEBIAN_VERSION" == "precise" ]]; then
-    # Install Ruby for fpm
-    cd $TMP
-    wget http://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.2.tar.gz
-    tar xvfvz ruby-2.2.2.tar.gz
-    cd ruby-2.2.2
-    ./configure
-    make
-    make install
-    gem update --system
-  else
-    apt-get -y --force-yes install ruby ruby-dev
-    if ! [[ "$DEBIAN_VERSION" == "trusty" ]]; then
-      apt-get -y --force-yes install rubygems
-    fi
-  fi
+  # Install Ruby for fpm
+  cd $TMP
+  wget http://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.2.tar.gz
+  tar xvfvz ruby-2.2.2.tar.gz
+  cd ruby-2.2.2
+  ./configure
+  make
+  make install
+  gem update --system
 
+  DEBIAN_VERSION=`lsb_release -cs`
   PACKAGE_TYPE="deb"
   LUA_MAKE="linux"
-  FPM_PARAMS="-d 'netcat' -d 'sudo' -d 'lua5.1' -d 'openssl' -d 'libpcre3' -d 'dnsmasq'"
+  FPM_PARAMS="-d 'netcat' -d 'sudo' -d 'openssl' -d 'libpcre3' -d 'dnsmasq' -d 'procps'"
   FINAL_FILE_NAME_SUFFIX=".${DEBIAN_VERSION}_all.deb"
 else
   echo "Unsupported platform"
@@ -221,13 +217,15 @@ cd $TMP
 wget http://luajit.org/download/LuaJIT-$LUAJIT_VERSION.tar.gz
 tar xzf LuaJIT-$LUAJIT_VERSION.tar.gz
 cd LuaJIT-$LUAJIT_VERSION
-make
+make $LUAJIT_MAKE
 make install DESTDIR=$OUT
 if [ "$(uname)" = "Darwin" ]; then
   sudo make install
 else
   make install # Install also on the build system
 fi
+mv $OUT/usr/local/bin/luajit-$LUAJIT_VERSION $OUT/usr/local/bin/luajit
+mv /usr/local/bin/luajit-$LUAJIT_VERSION /usr/local/bin/luajit
 cd $OUT
 
 # Install LuaRocks
@@ -235,7 +233,7 @@ cd $TMP
 wget http://luarocks.org/releases/luarocks-$LUAROCKS_VERSION.tar.gz
 tar xzf luarocks-$LUAROCKS_VERSION.tar.gz
 cd luarocks-$LUAROCKS_VERSION
-./configure --with-lua-include=/usr/local/include/luajit-2.0 --lua-suffix=jit --lua-version=5.1 --with-lua=/usr/local
+./configure --with-lua-include=/usr/local/include/luajit-2.1 --lua-suffix=jit --lua-version=5.1 --with-lua=/usr/local
 make build
 make install DESTDIR=$OUT
 cd $OUT
@@ -253,7 +251,6 @@ export LUA_PATH=${OUT}/usr/local/share/lua/5.1/?.lua
 
 # Install Serf
 cd $TMP
-mkdir -p $OUT/usr/sbin
 if [ "$(uname)" = "Darwin" ]; then
   wget https://releases.hashicorp.com/serf/${SERF_VERSION}/serf_${SERF_VERSION}_darwin_386.zip --no-check-certificate
   unzip serf_${SERF_VERSION}_darwin_386.zip
@@ -261,12 +258,14 @@ else
   wget https://releases.hashicorp.com/serf/${SERF_VERSION}/serf_${SERF_VERSION}_linux_386.zip --no-check-certificate
   unzip serf_${SERF_VERSION}_linux_386.zip
 fi
-cp serf $OUT/usr/sbin
+mkdir -p $OUT/usr/local/bin/
+cp serf $OUT/usr/local/bin/
 
 # Install Kong
 cd $TMP
-git clone --branch $KONG_BRANCH --depth 1 https://github.com/Mashape/kong.git
+git clone https://github.com/Mashape/kong.git
 cd kong
+git checkout $KONG_BRANCH
 $OUT/usr/local/bin/luarocks make kong-*.rockspec $LUAROCKS_PARAMS
 
 # Extract the version from the rockspec file

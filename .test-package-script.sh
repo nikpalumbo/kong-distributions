@@ -42,19 +42,23 @@ if [ $? -ne 0 ]; then
 fi
 
 # Set the testing Cassandra
-#$SUDO sed -i.bak "s@localhost@$TEST_CASSANDRA_HOST@g" $KONG_CONF
+# $SUDO sed -i.bak "s@localhost@$TEST_CASSANDRA_HOST@g" $KONG_CONF
 
 value=`cat $KONG_CONF`
 
 $SUDO cat > $KONG_CONF <<- EOM
-databases_available:
-  cassandra:
-    contact_points:
-      - "${TEST_CASSANDRA_HOST}"
+cassandra:
+  contact_points:
+    - "${TEST_CASSANDRA_HOST}"
 ${value}
 EOM
 
 kong start
+if [ $? -ne 0 ]; then
+  exit 1
+fi
+
+kong status
 if [ $? -ne 0 ]; then
   exit 1
 fi
@@ -69,6 +73,11 @@ fi
 
 if ! [ `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8001/` == "200" ]; then
   echo "Can't invoke admin API"
+  exit 1
+fi
+
+if ! [ `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8001/cluster/` == "200" ]; then
+  echo "Can't invoke cluster endpoint on admin API"
   exit 1
 fi
 
@@ -91,6 +100,11 @@ RESPONSE=`curl -s -o /dev/null -w "%{http_code}" -H "Host: $RANDOM_API_NAME.com"
 if ! [ $RESPONSE == "200" ]; then
   echo "Can't invoke API on HTTPS"
   cat /usr/local/kong/logs/error.log
+  exit 1
+fi
+
+kong stop
+if [ $? -ne 0 ]; then
   exit 1
 fi
 
