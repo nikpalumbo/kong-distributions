@@ -52,8 +52,8 @@ if [[ -z $ARG_PLATFORMS ]] || [[ -z $KONG_VERSION ]]; then
 fi
 
 # Check system
-if ! [ "$(uname)" = "Darwin" ]; then
-  echo "Run this script from OS X"
+if [[ "$OS" =~ Windows ]]; then
+  echo "Run this script from a *nix system"
   exit 1
 fi
 
