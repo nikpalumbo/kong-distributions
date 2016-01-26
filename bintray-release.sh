@@ -56,7 +56,7 @@ fi
 #                      Check Arguments                       #
 ##############################################################
 
-supported_platforms=( centos:5 centos:6 centos:7 debian:6 debian:7 debian:8 ubuntu:12.04.5 ubuntu:14.04.2 ubuntu:15.04 osx )
+supported_platforms=( centos:5 centos:6 centos:7 debian:6 debian:7 debian:8 ubuntu:12.04.5 ubuntu:14.04.2 ubuntu:15.04 aws osx )
 platforms_to_release=( )
 
 for var in "$ARG_PLATFORMS"
@@ -115,6 +115,7 @@ function echoResponse {
   fi    
 }
 
+KONG_GITHUB_LOC="https://github.com/Mashape/kong/releases/download/"
 KONG_MAJOR_VERSION=`echo $KONG_VERSION | sed 's/\([0-9].[0-9]\).*/\1.x/'`
 function createRepo {
   REPO_NAME=$1
@@ -139,6 +140,14 @@ do
   echo "Releasing $i"	
   if [[ "$i" == "osx" ]]; then
     echo "TBD"
+  elif [[ "$i" == "aws" ]]; then
+    if [ -e $DIR/build-output/kong-$KONG_VERSION.aws.rpm ]; then
+      echo $(createRepo "kong-rpm-aws-$KONG_MAJOR_VERSION" "rpm" "rpm-aws")
+      RESPONSE=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-rpm-aws-$KONG_MAJOR_VERSION/rpm-aws/$KONG_VERSION/$KONG_VERSION/kong-$KONG_VERSION.aws.rpm?publish=1" -T $DIR/build-output/kong-$KONG_VERSION.aws.rpm)
+      echo $(echoResponse "$RESPONSE")
+    else
+      echo "Artifact $DIR/build-output/kong-$KONG_VERSION.aws.rpm not found"    
+    fi
   else
     case $i in
     centos:*)
