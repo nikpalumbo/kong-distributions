@@ -34,7 +34,7 @@ LUA_VERSION=5.1.4
 LUAJIT_VERSION=2.1.0-beta1
 PCRE_VERSION=8.37
 LUAROCKS_VERSION=2.2.2
-OPENRESTY_VERSION=1.9.3.1
+OPENRESTY_VERSION=1.9.7.3
 DNSMASQ_VERSION=2.72
 OPENSSL_VERSION=1.0.2f
 SERF_VERSION=0.7.0
@@ -182,36 +182,16 @@ if [ "$(uname)" = "Darwin" ]; then
   make install DESTDIR=$OUT
   cd $OUT
 
-  OPENRESTY_CONFIGURE=$OPENRESTY_CONFIGURE" --with-cc-opt=-I$OUT/usr/local/include --with-ld-opt=-L$OUT/usr/local/lib"
+  OPENRESTY_CONFIGURE=$OPENRESTY_CONFIGURE" --with-cc-opt=-I$OUT/usr/local/include --with-ld-opt=-L$OUT/usr/local/lib -j8"
 fi
 
-############################################
-######### Install Patched OpenResty ########
-############################################
 cd $TMP
-wget http://openresty.org/download/ngx_openresty-$OPENRESTY_VERSION.tar.gz
-tar xzf ngx_openresty-$OPENRESTY_VERSION.tar.gz
-cd ngx_openresty-$OPENRESTY_VERSION
-# Download and apply nginx patch
-cd bundle/nginx-*
-wget https://raw.githubusercontent.com/openresty/lua-nginx-module/ssl-cert-by-lua/patches/nginx-ssl-cert.patch --no-check-certificate
-patch -p1 < nginx-ssl-cert.patch
-cd ..
-# Download `ssl-cert-by-lua` branch
-wget https://github.com/openresty/lua-nginx-module/archive/ssl-cert-by-lua.tar.gz -O ssl-cert-by-lua.tar.gz --no-check-certificate
-tar xzf ssl-cert-by-lua.tar.gz
-# Replace `ngx_lua-*` with `ssl-cert-by-lua` branch
-NGX_LUA=`ls | grep ngx_lua-*`
-rm -rf $NGX_LUA
-mv lua-nginx-module-ssl-cert-by-lua $NGX_LUA
-# Configure and install
-cd $TMP/ngx_openresty-$OPENRESTY_VERSION
+wget https://openresty.org/download/openresty-$OPENRESTY_VERSION.tar.gz
+tar xzf openresty-$OPENRESTY_VERSION.tar.gz
+cd openresty-$OPENRESTY_VERSION
 ./configure --with-pcre-jit --with-ipv6 --with-http_realip_module --with-http_ssl_module --with-http_stub_status_module ${OPENRESTY_CONFIGURE}
 make
 make install DESTDIR=$OUT
-############################################
-############################################
-############################################
 
 cd $TMP
 wget http://luajit.org/download/LuaJIT-$LUAJIT_VERSION.tar.gz
