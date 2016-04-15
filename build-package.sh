@@ -61,7 +61,7 @@ fi
 #                      Check Arguments                       #
 ##############################################################
 
-supported_platforms=( centos:5 centos:6 centos:7 debian:6 debian:7 debian:8 ubuntu:12.04.5 ubuntu:14.04.2 ubuntu:15.04 aws osx )
+supported_platforms=( centos:5 centos:6 centos:7 debian:7 debian:8 ubuntu:12.04.5 ubuntu:14.04.2 ubuntu:15.04 aws osx )
 platforms_to_build=( )
 
 for var in "$ARG_PLATFORMS"

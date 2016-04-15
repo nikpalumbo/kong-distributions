@@ -36,7 +36,7 @@ PCRE_VERSION=8.37
 LUAROCKS_VERSION=2.2.2
 OPENRESTY_VERSION=1.9.7.3
 DNSMASQ_VERSION=2.72
-OPENSSL_VERSION=1.0.2f
+OPENSSL_VERSION=1.0.2g
 SERF_VERSION=0.7.0
 
 # Variables to be used in the build process
@@ -67,7 +67,7 @@ if [ "$(uname)" = "Darwin" ]; then
   FINAL_BUILD_OUTPUT="$DIR/build-output"
 elif hash yum 2>/dev/null; then
   yum -y install epel-release
-  yum -y install wget tar make curl ldconfig gcc perl pcre-devel openssl-devel ldconfig unzip git rpm-build ncurses-devel which lua-$LUA_VERSION lua-devel-$LUA_VERSION gpg pkgconfig
+  yum -y install wget tar make curl ldconfig gcc perl pcre-devel openssl-devel ldconfig unzip git rpm-build ncurses-devel which lua-$LUA_VERSION lua-devel-$LUA_VERSION gpg pkgconfig xz-devel
 
   CENTOS_VERSION=`cat /etc/redhat-release | grep -oE '[0-9]+\.[0-9]+'`
   FPM_PARAMS="-d 'epel-release' -d 'sudo' -d 'nc' -d 'openssl' -d 'pcre' -d 'dnsmasq'"
@@ -182,6 +182,16 @@ if [ "$(uname)" = "Darwin" ]; then
   make install DESTDIR=$OUT
   cd $OUT
 
+  # Install libuuid
+  cd $TMP
+  wget http://downloads.sourceforge.net/project/libuuid/libuuid-1.0.3.tar.gz
+  tar xzf libuuid-1.0.3.tar.gz
+  cd libuuid-1.0.3
+  ./configure
+  make
+  make install DESTDIR=$OUT
+  cd $OUT
+
   OPENRESTY_CONFIGURE=$OPENRESTY_CONFIGURE" --with-cc-opt=-I$OUT/usr/local/include --with-ld-opt=-L$OUT/usr/local/lib -j8"
 fi
 
@@ -232,11 +242,11 @@ export LUA_PATH=${OUT}/usr/local/share/lua/5.1/?.lua
 # Install Serf
 cd $TMP
 if [ "$(uname)" = "Darwin" ]; then
-  wget https://releases.hashicorp.com/serf/${SERF_VERSION}/serf_${SERF_VERSION}_darwin_386.zip --no-check-certificate
-  unzip serf_${SERF_VERSION}_darwin_386.zip
+  wget https://releases.hashicorp.com/serf/${SERF_VERSION}/serf_${SERF_VERSION}_darwin_amd64.zip --no-check-certificate
+  unzip serf_${SERF_VERSION}_darwin_amd64.zip
 else
-  wget https://releases.hashicorp.com/serf/${SERF_VERSION}/serf_${SERF_VERSION}_linux_386.zip --no-check-certificate
-  unzip serf_${SERF_VERSION}_linux_386.zip
+  wget https://releases.hashicorp.com/serf/${SERF_VERSION}/serf_${SERF_VERSION}_linux_amd64.zip --no-check-certificate
+  unzip serf_${SERF_VERSION}_linux_amd64.zip
 fi
 mkdir -p $OUT/usr/local/bin/
 cp serf $OUT/usr/local/bin/
