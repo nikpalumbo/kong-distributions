@@ -36,7 +36,7 @@ PCRE_VERSION=8.37
 LUAROCKS_VERSION=2.2.2
 OPENRESTY_VERSION=1.9.7.3
 DNSMASQ_VERSION=2.72
-OPENSSL_VERSION=1.0.2g
+OPENSSL_VERSION=1.0.2h
 SERF_VERSION=0.7.0
 
 # Variables to be used in the build process
@@ -139,7 +139,7 @@ fi
 
 # Download OpenSSL
 cd $TMP
-wget http://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz -O openssl-$OPENSSL_VERSION.tar.gz
+wget ftp://ftp.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz -O openssl-$OPENSSL_VERSION.tar.gz
 tar xzf openssl-$OPENSSL_VERSION.tar.gz
 if [ "$(uname)" = "Darwin" ]; then # Checking if OS X
   export KERNEL_BITS=64 # This sets the right OpenSSL variable for OS X
