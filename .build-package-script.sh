@@ -32,9 +32,9 @@ mkdir -p $TMP
 # Load dependencies versions
 LUA_VERSION=5.1.4
 LUAJIT_VERSION=2.1.0-beta1
-PCRE_VERSION=8.37
-LUAROCKS_VERSION=2.2.2
-OPENRESTY_VERSION=1.9.7.5
+PCRE_VERSION=8.38
+LUAROCKS_VERSION=2.3.0
+OPENRESTY_VERSION=1.9.15.1
 DNSMASQ_VERSION=2.72
 OPENSSL_VERSION=1.0.2h
 SERF_VERSION=0.7.0
@@ -70,13 +70,13 @@ elif hash yum 2>/dev/null; then
   yum -y install wget tar make curl ldconfig gcc perl pcre-devel openssl-devel ldconfig unzip git rpm-build ncurses-devel which lua-$LUA_VERSION lua-devel-$LUA_VERSION gpg pkgconfig xz-devel
 
   CENTOS_VERSION=`cat /etc/redhat-release | grep -oE '[0-9]+\.[0-9]+'`
-  FPM_PARAMS="-d 'epel-release' -d 'sudo' -d 'nc' -d 'openssl' -d 'pcre' -d 'dnsmasq'"
+  FPM_PARAMS="-d 'epel-release' -d 'sudo' -d 'nc' -d 'openssl' -d 'pcre' -d 'dnsmasq' -d 'perl'"
 
   # Install Ruby for fpm
   cd $TMP
-  wget http://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.2.tar.gz
-  tar xvfvz ruby-2.2.2.tar.gz
-  cd ruby-2.2.2
+  wget https://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.5.tar.gz --no-check-certificate
+  tar xvfvz ruby-2.2.5.tar.gz
+  cd ruby-2.2.5
   ./configure
   make
   make install
@@ -90,6 +90,9 @@ elif hash yum 2>/dev/null; then
     if [[ $IS_AWS == true ]]; then
       FPM_PARAMS=$FPM_PARAMS" -d 'openssl098e'"
     fi
+
+    wget ftp://ftp.openssl.org/source/openssl-0.9.8zh.tar.gz
+    
   else
     yum -y install libuuid-devel
     #yum -y install ruby ruby-devel rubygems
@@ -109,9 +112,9 @@ elif hash apt-get 2>/dev/null; then
 
   # Install Ruby for fpm
   cd $TMP
-  wget http://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.2.tar.gz
-  tar xvfvz ruby-2.2.2.tar.gz
-  cd ruby-2.2.2
+  wget https://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.5.tar.gz --no-check-certificate
+  tar xvfvz ruby-2.2.5.tar.gz
+  cd ruby-2.2.5
   ./configure
   make
   make install
@@ -120,7 +123,7 @@ elif hash apt-get 2>/dev/null; then
   DEBIAN_VERSION=`lsb_release -cs`
   PACKAGE_TYPE="deb"
   LUA_MAKE="linux"
-  FPM_PARAMS="-d 'netcat' -d 'sudo' -d 'openssl' -d 'libpcre3' -d 'dnsmasq' -d 'procps'"
+  FPM_PARAMS="-d 'netcat' -d 'sudo' -d 'openssl' -d 'libpcre3' -d 'dnsmasq' -d 'procps' -d 'perl'"
   FINAL_FILE_NAME_SUFFIX=".${DEBIAN_VERSION}_all.deb"
 else
   echo "Unsupported platform"
@@ -263,9 +266,14 @@ rockspec_filename=`basename $TMP/kong/kong-*.rockspec`
 rockspec_basename=${rockspec_filename%.*}
 rockspec_version=${rockspec_basename#"kong-"}
 
+cp $TMP/kong/bin/kong $OUT/usr/local/bin/kong
+
 # Fix the Kong bin file
-sed -i.bak s@${OUT}@@g $OUT/usr/local/bin/kong
+sed -i.bak 's@#!/usr/bin/env resty@#!/usr/bin/env /usr/local/openresty/bin/resty@g' $OUT/usr/local/bin/kong
 rm $OUT/usr/local/bin/kong.bak
+
+# Copy the conf file for later
+cp $TMP/kong/kong.conf.default $OUT/usr/local/lib/luarocks/rocks/kong/$rockspec_version/kong.conf.default
 
 # Create Kong folder and default logging files, and SSL folder
 mkdir -p $OUT/usr/local/kong
@@ -274,7 +282,7 @@ mkdir -p $OUT/usr/local/kong
 post_install_script=$(mktemp $MKTEMP_POSTSCRIPT_CONF)
 echo "#!/bin/sh
 mkdir -p /etc/kong
-cp /usr/local/lib/luarocks/rocks/kong/$rockspec_version/conf/kong.yml /etc/kong/kong.yml
+mv /usr/local/lib/luarocks/rocks/kong/$rockspec_version/kong.conf.default /etc/kong/kong.conf
 echo \"user=root\" > /etc/dnsmasq.conf
 chmod -R 777 /usr/local/kong/
 " > $post_install_script
