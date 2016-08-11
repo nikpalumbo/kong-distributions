@@ -69,8 +69,11 @@ elif hash yum 2>/dev/null; then
   yum -y install epel-release
   yum -y install wget tar make curl ldconfig gcc perl pcre-devel openssl-devel ldconfig unzip git rpm-build ncurses-devel which lua-$LUA_VERSION lua-devel-$LUA_VERSION gpg pkgconfig xz-devel
 
-  CENTOS_VERSION=`cat /etc/redhat-release | grep -oE '[0-9]+\.[0-9]+'`
   FPM_PARAMS="-d 'epel-release' -d 'sudo' -d 'nc' -d 'openssl' -d 'pcre' -d 'dnsmasq' -d 'perl'"
+  if [[ $IS_AWS == true ]]; then
+    FPM_PARAMS=$FPM_PARAMS" -d 'openssl098e'"
+    FINAL_FILE_NAME_SUFFIX=".aws.rpm"
+  fi
 
   # Install Ruby for fpm
   cd $TMP
@@ -82,31 +85,20 @@ elif hash yum 2>/dev/null; then
   make install
   gem update --system
 
-  if [[ ${CENTOS_VERSION%.*} == "5" ]]; then
-    yum -y install e2fsprogs-devel
-
-    LUAJIT_MAKE="CFLAGS=-std=gnu99"
-
-    if [[ $IS_AWS == true ]]; then
+  if ! [[ $IS_AWS == true ]]; then
+    CENTOS_VERSION=`cat /etc/redhat-release | grep -oE '[0-9]+\.[0-9]+'`
+    FINAL_FILE_NAME_SUFFIX=".el${CENTOS_VERSION%.*}.noarch.rpm"
+    if [[ ${CENTOS_VERSION%.*} == "5" ]]; then
+      yum -y install e2fsprogs-devel
+      LUAJIT_MAKE="CFLAGS=-std=gnu99"
+    else
+      yum -y install libuuid-devel
       FPM_PARAMS=$FPM_PARAMS" -d 'openssl098e'"
     fi
-
-    wget ftp://ftp.openssl.org/source/openssl-0.9.8zh.tar.gz
-    
-  else
-    yum -y install libuuid-devel
-    #yum -y install ruby ruby-devel rubygems
-    FPM_PARAMS=$FPM_PARAMS" -d 'openssl098e'"
   fi
 
   PACKAGE_TYPE="rpm"
   LUA_MAKE="linux"
-
-  if [[ $IS_AWS == true ]]; then
-    FINAL_FILE_NAME_SUFFIX=".aws.rpm"
-  else
-    FINAL_FILE_NAME_SUFFIX=".el${CENTOS_VERSION%.*}.noarch.rpm"
-  fi
 elif hash apt-get 2>/dev/null; then
   apt-get update && apt-get -y --force-yes install wget curl gnupg tar make gcc libreadline-dev libncurses5-dev libpcre3-dev libssl-dev perl unzip git lua${LUA_VERSION%.*} liblua${LUA_VERSION%.*}-0-dev lsb-release uuid-dev
 
@@ -282,7 +274,7 @@ mkdir -p $OUT/usr/local/kong
 post_install_script=$(mktemp $MKTEMP_POSTSCRIPT_CONF)
 echo "#!/bin/sh
 mkdir -p /etc/kong
-mv /usr/local/lib/luarocks/rocks/kong/$rockspec_version/kong.conf.default /etc/kong/kong.conf
+mv /usr/local/lib/luarocks/rocks/kong/$rockspec_version/kong.conf.default /etc/kong/kong.conf.default
 echo \"user=root\" > /etc/dnsmasq.conf
 chmod -R 777 /usr/local/kong/
 " > $post_install_script
