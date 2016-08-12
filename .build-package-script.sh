@@ -67,7 +67,7 @@ if [ "$(uname)" = "Darwin" ]; then
   FINAL_BUILD_OUTPUT="$DIR/build-output"
 elif hash yum 2>/dev/null; then
   yum -y install epel-release
-  yum -y install wget tar make curl ldconfig gcc perl pcre-devel openssl-devel ldconfig unzip git rpm-build ncurses-devel which lua-$LUA_VERSION lua-devel-$LUA_VERSION gpg pkgconfig xz-devel
+  yum -y install wget tar make curl ldconfig gcc perl pcre-devel openssl-devel ldconfig unzip git rpm-build ncurses-devel which lua-$LUA_VERSION lua-devel-$LUA_VERSION gpg pkgconfig xz-devel ruby-devel
 
   FPM_PARAMS="-d 'epel-release' -d 'sudo' -d 'nc' -d 'openssl' -d 'pcre' -d 'dnsmasq' -d 'perl'"
   if [[ $IS_AWS == true ]]; then
