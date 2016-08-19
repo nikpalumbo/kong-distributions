@@ -23,7 +23,7 @@ EOF
 ARG_PLATFORMS=
 KONG_VERSION=
 TEST=false
-while getopts “hk:p:t” OPTION
+while getopts "hk:p:t" OPTION
 do
   case $OPTION in
     h)
@@ -61,7 +61,7 @@ fi
 #                      Check Arguments                       #
 ##############################################################
 
-supported_platforms=( centos:6 centos:7 debian:7 debian:8 ubuntu:12.04.5 ubuntu:14.04.2 ubuntu:15.04 ubuntu:16.04 aws osx )
+supported_platforms=( centos:6 centos:7 debian:7 debian:8 ubuntu:12.04.5 ubuntu:14.04.2 ubuntu:15.04 ubuntu:16.04 osx )
 platforms_to_build=( )
 
 for var in "$ARG_PLATFORMS"
