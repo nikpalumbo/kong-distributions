@@ -32,11 +32,11 @@ mkdir -p $TMP
 # Load dependencies versions
 LUA_VERSION=5.1.4
 LUAJIT_VERSION=2.1.0-beta1
-PCRE_VERSION=8.37
-LUAROCKS_VERSION=2.2.2
-OPENRESTY_VERSION=1.9.3.1
+PCRE_VERSION=8.38
+LUAROCKS_VERSION=2.3.0
+OPENRESTY_VERSION=1.9.15.1
 DNSMASQ_VERSION=2.72
-OPENSSL_VERSION=1.0.2e
+OPENSSL_VERSION=1.0.2h
 SERF_VERSION=0.7.0
 
 # Variables to be used in the build process
@@ -67,51 +67,46 @@ if [ "$(uname)" = "Darwin" ]; then
   FINAL_BUILD_OUTPUT="$DIR/build-output"
 elif hash yum 2>/dev/null; then
   yum -y install epel-release
-  yum -y install wget tar make curl ldconfig gcc perl pcre-devel openssl-devel ldconfig unzip git rpm-build ncurses-devel which lua-$LUA_VERSION lua-devel-$LUA_VERSION gpg pkgconfig
+  yum -y install wget tar make curl ldconfig gcc perl pcre-devel openssl-devel ldconfig unzip git rpm-build ncurses-devel which lua-$LUA_VERSION lua-devel-$LUA_VERSION gpg pkgconfig xz-devel ruby-devel
 
-  CENTOS_VERSION=`cat /etc/redhat-release | grep -oE '[0-9]+\.[0-9]+'`
-  FPM_PARAMS="-d 'epel-release' -d 'sudo' -d 'nc' -d 'openssl' -d 'pcre' -d 'dnsmasq'"
+  FPM_PARAMS="-d 'epel-release' -d 'sudo' -d 'nc' -d 'openssl' -d 'pcre' -d 'dnsmasq' -d 'perl'"
+  if [[ $IS_AWS == true ]]; then
+    FPM_PARAMS=$FPM_PARAMS" -d 'openssl098e'"
+    FINAL_FILE_NAME_SUFFIX=".aws.rpm"
+  fi
 
   # Install Ruby for fpm
   cd $TMP
-  wget http://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.2.tar.gz
-  tar xvfvz ruby-2.2.2.tar.gz
-  cd ruby-2.2.2
+  wget https://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.5.tar.gz --no-check-certificate
+  tar xvfvz ruby-2.2.5.tar.gz
+  cd ruby-2.2.5
   ./configure
   make
   make install
   gem update --system
 
-  if [[ ${CENTOS_VERSION%.*} == "5" ]]; then
-    yum -y install e2fsprogs-devel
-
-    LUAJIT_MAKE="CFLAGS=-std=gnu99"
-
-    if [[ $IS_AWS == true ]]; then
+  if ! [[ $IS_AWS == true ]]; then
+    CENTOS_VERSION=`cat /etc/redhat-release | grep -oE '[0-9]+\.[0-9]+'`
+    FINAL_FILE_NAME_SUFFIX=".el${CENTOS_VERSION%.*}.noarch.rpm"
+    if [[ ${CENTOS_VERSION%.*} == "5" ]]; then
+      yum -y install e2fsprogs-devel
+      LUAJIT_MAKE="CFLAGS=-std=gnu99"
+    else
+      yum -y install libuuid-devel
       FPM_PARAMS=$FPM_PARAMS" -d 'openssl098e'"
     fi
-  else
-    yum -y install libuuid-devel
-    #yum -y install ruby ruby-devel rubygems
-    FPM_PARAMS=$FPM_PARAMS" -d 'openssl098e'"
   fi
 
   PACKAGE_TYPE="rpm"
   LUA_MAKE="linux"
-
-  if [[ $IS_AWS == true ]]; then
-    FINAL_FILE_NAME_SUFFIX=".aws.rpm"
-  else
-    FINAL_FILE_NAME_SUFFIX=".el${CENTOS_VERSION%.*}.noarch.rpm"
-  fi
 elif hash apt-get 2>/dev/null; then
   apt-get update && apt-get -y --force-yes install wget curl gnupg tar make gcc libreadline-dev libncurses5-dev libpcre3-dev libssl-dev perl unzip git lua${LUA_VERSION%.*} liblua${LUA_VERSION%.*}-0-dev lsb-release uuid-dev
 
   # Install Ruby for fpm
   cd $TMP
-  wget http://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.2.tar.gz
-  tar xvfvz ruby-2.2.2.tar.gz
-  cd ruby-2.2.2
+  wget https://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.5.tar.gz --no-check-certificate
+  tar xvfvz ruby-2.2.5.tar.gz
+  cd ruby-2.2.5
   ./configure
   make
   make install
@@ -120,7 +115,7 @@ elif hash apt-get 2>/dev/null; then
   DEBIAN_VERSION=`lsb_release -cs`
   PACKAGE_TYPE="deb"
   LUA_MAKE="linux"
-  FPM_PARAMS="-d 'netcat' -d 'sudo' -d 'openssl' -d 'libpcre3' -d 'dnsmasq' -d 'procps'"
+  FPM_PARAMS="-d 'netcat' -d 'sudo' -d 'openssl' -d 'libpcre3' -d 'dnsmasq' -d 'procps' -d 'perl'"
   FINAL_FILE_NAME_SUFFIX=".${DEBIAN_VERSION}_all.deb"
 else
   echo "Unsupported platform"
@@ -139,7 +134,7 @@ fi
 
 # Download OpenSSL
 cd $TMP
-wget http://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz -O openssl-$OPENSSL_VERSION.tar.gz
+wget ftp://ftp.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz -O openssl-$OPENSSL_VERSION.tar.gz
 tar xzf openssl-$OPENSSL_VERSION.tar.gz
 if [ "$(uname)" = "Darwin" ]; then # Checking if OS X
   export KERNEL_BITS=64 # This sets the right OpenSSL variable for OS X
@@ -182,36 +177,26 @@ if [ "$(uname)" = "Darwin" ]; then
   make install DESTDIR=$OUT
   cd $OUT
 
-  OPENRESTY_CONFIGURE=$OPENRESTY_CONFIGURE" --with-cc-opt=-I$OUT/usr/local/include --with-ld-opt=-L$OUT/usr/local/lib"
+  # Install libuuid
+  cd $TMP
+  wget http://downloads.sourceforge.net/project/libuuid/libuuid-1.0.3.tar.gz
+  tar xzf libuuid-1.0.3.tar.gz
+  cd libuuid-1.0.3
+  ./configure
+  make
+  make install DESTDIR=$OUT
+  cd $OUT
+
+  OPENRESTY_CONFIGURE=$OPENRESTY_CONFIGURE" --with-cc-opt=-I$OUT/usr/local/include --with-ld-opt=-L$OUT/usr/local/lib -j8"
 fi
 
-############################################
-######### Install Patched OpenResty ########
-############################################
 cd $TMP
-wget http://openresty.org/download/ngx_openresty-$OPENRESTY_VERSION.tar.gz
-tar xzf ngx_openresty-$OPENRESTY_VERSION.tar.gz
-cd ngx_openresty-$OPENRESTY_VERSION
-# Download and apply nginx patch
-cd bundle/nginx-*
-wget https://raw.githubusercontent.com/openresty/lua-nginx-module/ssl-cert-by-lua/patches/nginx-ssl-cert.patch --no-check-certificate
-patch -p1 < nginx-ssl-cert.patch
-cd ..
-# Download `ssl-cert-by-lua` branch
-wget https://github.com/openresty/lua-nginx-module/archive/ssl-cert-by-lua.tar.gz -O ssl-cert-by-lua.tar.gz --no-check-certificate
-tar xzf ssl-cert-by-lua.tar.gz
-# Replace `ngx_lua-*` with `ssl-cert-by-lua` branch
-NGX_LUA=`ls | grep ngx_lua-*`
-rm -rf $NGX_LUA
-mv lua-nginx-module-ssl-cert-by-lua $NGX_LUA
-# Configure and install
-cd $TMP/ngx_openresty-$OPENRESTY_VERSION
+wget https://openresty.org/download/openresty-$OPENRESTY_VERSION.tar.gz
+tar xzf openresty-$OPENRESTY_VERSION.tar.gz
+cd openresty-$OPENRESTY_VERSION
 ./configure --with-pcre-jit --with-ipv6 --with-http_realip_module --with-http_ssl_module --with-http_stub_status_module ${OPENRESTY_CONFIGURE}
 make
 make install DESTDIR=$OUT
-############################################
-############################################
-############################################
 
 cd $TMP
 wget http://luajit.org/download/LuaJIT-$LUAJIT_VERSION.tar.gz
@@ -252,11 +237,11 @@ export LUA_PATH=${OUT}/usr/local/share/lua/5.1/?.lua
 # Install Serf
 cd $TMP
 if [ "$(uname)" = "Darwin" ]; then
-  wget https://releases.hashicorp.com/serf/${SERF_VERSION}/serf_${SERF_VERSION}_darwin_386.zip --no-check-certificate
-  unzip serf_${SERF_VERSION}_darwin_386.zip
+  wget https://releases.hashicorp.com/serf/${SERF_VERSION}/serf_${SERF_VERSION}_darwin_amd64.zip --no-check-certificate
+  unzip serf_${SERF_VERSION}_darwin_amd64.zip
 else
-  wget https://releases.hashicorp.com/serf/${SERF_VERSION}/serf_${SERF_VERSION}_linux_386.zip --no-check-certificate
-  unzip serf_${SERF_VERSION}_linux_386.zip
+  wget https://releases.hashicorp.com/serf/${SERF_VERSION}/serf_${SERF_VERSION}_linux_amd64.zip --no-check-certificate
+  unzip serf_${SERF_VERSION}_linux_amd64.zip
 fi
 mkdir -p $OUT/usr/local/bin/
 cp serf $OUT/usr/local/bin/
@@ -273,9 +258,14 @@ rockspec_filename=`basename $TMP/kong/kong-*.rockspec`
 rockspec_basename=${rockspec_filename%.*}
 rockspec_version=${rockspec_basename#"kong-"}
 
+cp $TMP/kong/bin/kong $OUT/usr/local/bin/kong
+
 # Fix the Kong bin file
-sed -i.bak s@${OUT}@@g $OUT/usr/local/bin/kong
+sed -i.bak 's@#!/usr/bin/env resty@#!/usr/bin/env /usr/local/openresty/bin/resty@g' $OUT/usr/local/bin/kong
 rm $OUT/usr/local/bin/kong.bak
+
+# Copy the conf file for later
+cp $TMP/kong/kong.conf.default $OUT/usr/local/lib/luarocks/rocks/kong/$rockspec_version/kong.conf.default
 
 # Create Kong folder and default logging files, and SSL folder
 mkdir -p $OUT/usr/local/kong
@@ -284,7 +274,7 @@ mkdir -p $OUT/usr/local/kong
 post_install_script=$(mktemp $MKTEMP_POSTSCRIPT_CONF)
 echo "#!/bin/sh
 mkdir -p /etc/kong
-cp /usr/local/lib/luarocks/rocks/kong/$rockspec_version/conf/kong.yml /etc/kong/kong.yml
+mv /usr/local/lib/luarocks/rocks/kong/$rockspec_version/kong.conf.default /etc/kong/kong.conf.default
 echo \"user=root\" > /etc/dnsmasq.conf
 chmod -R 777 /usr/local/kong/
 " > $post_install_script

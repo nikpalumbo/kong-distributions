@@ -10,13 +10,9 @@ elif [ ! -f $1 ]; then
 fi
 
 PACKAGE_FILE=$1
-TEST_CASSANDRA_HOST="ec2-52-6-21-95.compute-1.amazonaws.com"
-KONG_CONF="/etc/kong/kong.yml"
-SUDO=""
 
 if [ "$(uname)" = "Darwin" ]; then
   sudo /usr/sbin/installer -pkg $PACKAGE_FILE -target /
-  SUDO="sudo"
 elif hash yum 2>/dev/null; then
   yum install -y epel-release
   yum install -y $PACKAGE_FILE --nogpgcheck
@@ -41,24 +37,17 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Set the testing Cassandra
-# $SUDO sed -i.bak "s@localhost@$TEST_CASSANDRA_HOST@g" $KONG_CONF
-
-value=`cat $KONG_CONF`
-
-$SUDO cat > $KONG_CONF <<- EOM
-cassandra:
-  contact_points:
-    - "${TEST_CASSANDRA_HOST}"
-${value}
-EOM
+export KONG_PG_HOST=kong-distributions-test.cyvnqxz6izox.us-east-1.rds.amazonaws.com 
+export KONG_PG_PORT=5432 
+export KONG_PG_USER=kong 
+export KONG_PG_PASSWORD=kongpassword 
 
 kong start
 if [ $? -ne 0 ]; then
   exit 1
 fi
 
-kong status
+kong health
 if [ $? -ne 0 ]; then
   exit 1
 fi
@@ -103,7 +92,7 @@ if ! [ $RESPONSE == "200" ]; then
   exit 1
 fi
 
-kong stop
+kong stop --trace --vv
 if [ $? -ne 0 ]; then
   exit 1
 fi

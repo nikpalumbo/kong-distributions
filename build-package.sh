@@ -23,7 +23,7 @@ EOF
 ARG_PLATFORMS=
 KONG_VERSION=
 TEST=false
-while getopts “hk:p:t” OPTION
+while getopts "hk:p:t" OPTION
 do
   case $OPTION in
     h)
@@ -61,7 +61,7 @@ fi
 #                      Check Arguments                       #
 ##############################################################
 
-supported_platforms=( centos:5 centos:6 centos:7 debian:6 debian:7 debian:8 ubuntu:12.04.5 ubuntu:14.04.2 ubuntu:15.04 osx aws )
+supported_platforms=( centos:6 centos:7 debian:7 debian:8 ubuntu:12.04.5 ubuntu:14.04.2 ubuntu:15.04 ubuntu:16.04 osx )
 platforms_to_build=( )
 
 for var in "$ARG_PLATFORMS"
@@ -98,24 +98,28 @@ fi
 # Delete previous packages
 rm -rf $DIR/build-output
 
-# Deleting Docker images
-docker rm -f $(docker ps -a -q) || true
-docker rmi -f $(docker images -q) || true
+for i in "${platforms_to_build[@]}"
+do
+  echo "Building for $i"
+done
 
 # Start build
 for i in "${platforms_to_build[@]}"
 do
+  # Deleting Docker images
+  docker rm -f $(docker ps -a -q) || true
+  docker rmi -f $(docker images -q) || true
   echo "Building for $i"
   if [[ "$i" == "osx" ]]; then
     /bin/bash $DIR/.build-package-script.sh ${KONG_VERSION}
   elif [[ "$i" == "aws" ]]; then
-    docker pull centos:5
-    docker run -v $DIR/:/build-data centos:5 /bin/bash -c "/build-data/.build-package-script.sh ${KONG_VERSION} -aws"
+    echo "TODO: Build on AWS Linux AMI!"
   else
     docker pull $i # Because of https://github.com/CentOS/CentOS-Dockerfiles/issues/33
     docker run -v $DIR/:/build-data $i /bin/bash -c "/build-data/.build-package-script.sh ${KONG_VERSION}"
   fi
   if [ $? -ne 0 ]; then
+    echo "Error building for $i"
     exit 1
   fi
 
@@ -132,6 +136,7 @@ do
       docker run -v $DIR/:/build-data $i /bin/bash -c "/build-data/.test-package-script.sh /build-data/build-output/$last_file_name"
     fi
     if [ $? -ne 0 ]; then
+      echo "Error testing for $i"
       exit 1
     fi
   fi
