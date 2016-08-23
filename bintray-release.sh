@@ -56,7 +56,7 @@ fi
 #                      Check Arguments                       #
 ##############################################################
 
-supported_platforms=( centos:5 centos:6 centos:7 debian:6 debian:7 debian:8 ubuntu:12.04.5 ubuntu:14.04.2 ubuntu:15.04 aws osx )
+supported_platforms=( centos:5 centos:6 centos:7 debian:7 debian:8 ubuntu:12.04.5 ubuntu:14.04.2 ubuntu:15.04 ubuntu:16.04 aws osx )
 platforms_to_release=( )
 
 for var in "$ARG_PLATFORMS"
@@ -90,7 +90,7 @@ if [ "$DIR" == "/" ]; then
   DIR=""
 fi
 
-MAP=( "debian:6=squeeze" "debian:7=wheezy" "debian:8=jessie" "ubuntu:12.04.5=precise" "ubuntu:14.04.2=trusty" "ubuntu:15.04=vivid")
+MAP=( "debian:6=squeeze" "debian:7=wheezy" "debian:8=jessie" "ubuntu:12.04.5=precise" "ubuntu:14.04.2=trusty" "ubuntu:15.04=vivid" "ubuntu:16.04=xenial")
 
 function get {
   [[ "$#" != 1 ]] && exit 1
@@ -143,7 +143,7 @@ do
   elif [[ "$i" == "aws" ]]; then
     if [ -e $DIR/build-output/kong-$KONG_VERSION.aws.rpm ]; then
       echo $(createRepo "kong-rpm-aws-$KONG_MAJOR_VERSION" "rpm" "rpm-aws")
-      RESPONSE=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-rpm-aws-$KONG_MAJOR_VERSION/rpm-aws/$KONG_VERSION/$KONG_VERSION/kong-$KONG_VERSION.aws.rpm?publish=1" -T $DIR/build-output/kong-$KONG_VERSION.aws.rpm)
+      RESPONSE=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-rpm-aws-$KONG_MAJOR_VERSION/rpm-aws/$KONG_VERSION/$KONG_VERSION/kong-$KONG_VERSION.aws.rpm?publish=1&override=1" -T $DIR/build-output/kong-$KONG_VERSION.aws.rpm)
       echo $(echoResponse "$RESPONSE")
     else
       echo "Artifact $DIR/build-output/kong-$KONG_VERSION.aws.rpm not found"    
@@ -154,7 +154,7 @@ do
       VERSION=$(echo $i | awk -F":" '{print $2}')
       if [ -e $DIR/build-output/kong-$KONG_VERSION.el$VERSION.noarch.rpm ]; then
         echo $(createRepo "kong-rpm-el$VERSION-$KONG_MAJOR_VERSION" "rpm" "rpm-el$VERSION")
-        RESPONSE=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-rpm-el$VERSION-$KONG_MAJOR_VERSION/rpm-el$VERSION/$KONG_VERSION/$KONG_VERSION/kong-$KONG_VERSION.el$VERSION.noarch.rpm?publish=1" -T $DIR/build-output/kong-$KONG_VERSION.el$VERSION.noarch.rpm)
+        RESPONSE=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-rpm-el$VERSION-$KONG_MAJOR_VERSION/rpm-el$VERSION/$KONG_VERSION/$KONG_VERSION/kong-$KONG_VERSION.el$VERSION.noarch.rpm?publish=1&override=1" -T $DIR/build-output/kong-$KONG_VERSION.el$VERSION.noarch.rpm)
         echo $(echoResponse "$RESPONSE")
       else
         echo "Artifact $DIR/build-output/kong-$KONG_VERSION.el$VERSION.noarch.rpm not found"    
@@ -166,7 +166,7 @@ do
       OS=$(echo $i | awk -F":" '{print $1}')
 	    if [ -e $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb ]; then
         REPO_STATUS=$(createRepo "kong-$OS-$VERSION-$KONG_MAJOR_VERSION" "debian" "$OS-$VERSION")
-        RESPONSE=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-$OS-$VERSION-$KONG_MAJOR_VERSION/$OS-$VERSION/$KONG_VERSION/dists/kong-$KONG_VERSION.$VERSION$ALL.deb;deb_distribution=$VERSION;deb_component=main;deb_architecture=i386,amd64,noarch;publish=1" -T $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb)
+        RESPONSE=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-$OS-$VERSION-$KONG_MAJOR_VERSION/$OS-$VERSION/$KONG_VERSION/dists/kong-$KONG_VERSION.$VERSION$ALL.deb;deb_distribution=$VERSION;deb_component=main;deb_architecture=i386,amd64,noarch;publish=1&override=1" -T $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb)
         echo $(echoResponse "$RESPONSE")
       else
         echo "Artifact $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb not found" 
