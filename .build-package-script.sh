@@ -73,6 +73,9 @@ elif hash yum 2>/dev/null; then
   if [[ $IS_AWS == true ]]; then
     FPM_PARAMS=$FPM_PARAMS" -d 'openssl098e'"
     FINAL_FILE_NAME_SUFFIX=".aws.rpm"
+  else
+    CENTOS_VERSION=`cat /etc/redhat-release | grep -oE '[0-9]+\.[0-9]+'`
+    FINAL_FILE_NAME_SUFFIX=".el${CENTOS_VERSION%.*}.noarch.rpm"
   fi
 
   # Install Ruby for fpm
@@ -85,22 +88,10 @@ elif hash yum 2>/dev/null; then
   make install
   gem update --system
 
-  if ! [[ $IS_AWS == true ]]; then
-    CENTOS_VERSION=`cat /etc/redhat-release | grep -oE '[0-9]+\.[0-9]+'`
-    FINAL_FILE_NAME_SUFFIX=".el${CENTOS_VERSION%.*}.noarch.rpm"
-    if [[ ${CENTOS_VERSION%.*} == "5" ]]; then
-      yum -y install e2fsprogs-devel
-      LUAJIT_MAKE="CFLAGS=-std=gnu99"
-    else
-      yum -y install libuuid-devel
-      FPM_PARAMS=$FPM_PARAMS" -d 'openssl098e'"
-    fi
-  fi
-
   PACKAGE_TYPE="rpm"
   LUA_MAKE="linux"
 elif hash apt-get 2>/dev/null; then
-  apt-get update && apt-get -y --force-yes install wget curl gnupg tar make gcc libreadline-dev libncurses5-dev libpcre3-dev libssl-dev perl unzip git lua${LUA_VERSION%.*} liblua${LUA_VERSION%.*}-0-dev lsb-release uuid-dev
+  apt-get update && apt-get -y --force-yes install wget curl gnupg tar make gcc libreadline-dev libncurses5-dev libpcre3-dev libssl-dev perl unzip git lua${LUA_VERSION%.*} liblua${LUA_VERSION%.*}-0-dev lsb-release
 
   # Install Ruby for fpm
   cd $TMP
@@ -173,16 +164,6 @@ if [ "$(uname)" = "Darwin" ]; then
   wget http://www.thekelleys.org.uk/dnsmasq/dnsmasq-$DNSMASQ_VERSION.tar.gz
   tar xzf dnsmasq-$DNSMASQ_VERSION.tar.gz
   cd dnsmasq-$DNSMASQ_VERSION
-  make
-  make install DESTDIR=$OUT
-  cd $OUT
-
-  # Install libuuid
-  cd $TMP
-  wget http://downloads.sourceforge.net/project/libuuid/libuuid-1.0.3.tar.gz
-  tar xzf libuuid-1.0.3.tar.gz
-  cd libuuid-1.0.3
-  ./configure
   make
   make install DESTDIR=$OUT
   cd $OUT
