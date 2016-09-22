@@ -142,6 +142,7 @@ do
   if [[ "$i" == "osx" ]]; then
     echo "TBD"
   elif [[ "$i" == "aws" ]]; then
+    wget -O $DIR/build-output/kong-$KONG_VERSION.aws.rpm https://github.com/Mashape/kong/releases/download/$KONG_VERSION/kong-$KONG_VERSION.aws.rpm 
     if [ -e $DIR/build-output/kong-$KONG_VERSION.aws.rpm ]; then
       echo $(createRepo "kong-rpm-aws-$KONG_MAJOR_VERSION" "rpm" "rpm-aws")
       RESPONSE=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-rpm-aws-$KONG_MAJOR_VERSION/rpm-aws/$KONG_VERSION/$KONG_VERSION/kong-$KONG_VERSION.aws.rpm?publish=1&override=1" -T $DIR/build-output/kong-$KONG_VERSION.aws.rpm)
@@ -153,6 +154,7 @@ do
     case $i in
     centos:*)
       VERSION=$(echo $i | awk -F":" '{print $2}')
+      wget -O $DIR/build-output/kong-$KONG_VERSION.el$VERSION.noarch.rpm https://github.com/Mashape/kong/releases/download/$KONG_VERSION/kong-$KONG_VERSION.el$VERSION.noarch.rpm
       if [ -e $DIR/build-output/kong-$KONG_VERSION.el$VERSION.noarch.rpm ]; then
         echo $(createRepo "kong-rpm-el$VERSION-$KONG_MAJOR_VERSION" "rpm" "rpm-el$VERSION")
         RESPONSE=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-rpm-el$VERSION-$KONG_MAJOR_VERSION/rpm-el$VERSION/$KONG_VERSION/$KONG_VERSION/kong-$KONG_VERSION.el$VERSION.noarch.rpm?publish=1&override=1" -T $DIR/build-output/kong-$KONG_VERSION.el$VERSION.noarch.rpm)
@@ -165,6 +167,7 @@ do
       VERSION=$(get "$i")
       ALL=_all
       OS=$(echo $i | awk -F":" '{print $1}')
+      wget -O $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb https://github.com/Mashape/kong/releases/download/$KONG_VERSION/kong-$KONG_VERSION.$VERSION$ALL.deb
 	    if [ -e $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb ]; then
         REPO_STATUS=$(createRepo "kong-$OS-$VERSION-$KONG_MAJOR_VERSION" "debian" "$OS-$VERSION")
         RESPONSE=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-$OS-$VERSION-$KONG_MAJOR_VERSION/$OS-$VERSION/$KONG_VERSION/dists/kong-$KONG_VERSION.$VERSION$ALL.deb;deb_distribution=$VERSION;deb_component=main;deb_architecture=i386,amd64,noarch;publish=1&override=1" -T $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb)
