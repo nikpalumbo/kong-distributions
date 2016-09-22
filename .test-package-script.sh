@@ -92,7 +92,7 @@ if ! [ $RESPONSE == "200" ]; then
   exit 1
 fi
 
-kong stop --trace --vv
+kong stop --vv
 if [ $? -ne 0 ]; then
   exit 1
 fi
