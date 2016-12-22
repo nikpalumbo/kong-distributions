@@ -42,7 +42,7 @@ export KONG_PG_PORT=5432
 export KONG_PG_USER=kong 
 export KONG_PG_PASSWORD=kongpassword 
 
-kong start
+kong start --vv
 if [ $? -ne 0 ]; then
   exit 1
 fi

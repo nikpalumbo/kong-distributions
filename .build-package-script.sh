@@ -31,11 +31,10 @@ mkdir -p $TMP
 
 # Load dependencies versions
 LUA_VERSION=5.1.4
-LUAJIT_VERSION=2.1.0-beta1
+LUAJIT_VERSION=2.1.0-beta2
 PCRE_VERSION=8.38
-LUAROCKS_VERSION=2.3.0
+LUAROCKS_VERSION=2.4.1
 OPENRESTY_VERSION=1.11.2.1
-DNSMASQ_VERSION=2.72
 OPENSSL_VERSION=1.0.2j
 SERF_VERSION=0.7.0
 
@@ -69,7 +68,7 @@ elif hash yum 2>/dev/null; then
   yum -y install epel-release
   yum -y install wget tar make curl ldconfig gcc perl pcre-devel openssl-devel ldconfig unzip git rpm-build ncurses-devel which lua-$LUA_VERSION lua-devel-$LUA_VERSION gpg pkgconfig xz-devel ruby-devel
 
-  FPM_PARAMS="-d 'epel-release' -d 'nc' -d 'openssl' -d 'pcre' -d 'dnsmasq' -d 'perl'"
+  FPM_PARAMS="-d 'epel-release' -d 'nc' -d 'openssl' -d 'pcre' -d 'perl'"
   if [[ $IS_AWS == true ]]; then
     FPM_PARAMS=$FPM_PARAMS" -d 'openssl098e'"
     FINAL_FILE_NAME_SUFFIX=".aws.rpm"
@@ -106,7 +105,7 @@ elif hash apt-get 2>/dev/null; then
   DEBIAN_VERSION=`lsb_release -cs`
   PACKAGE_TYPE="deb"
   LUA_MAKE="linux"
-  FPM_PARAMS="-d 'netcat' -d 'openssl' -d 'libpcre3' -d 'dnsmasq' -d 'procps' -d 'perl'"
+  FPM_PARAMS="-d 'netcat' -d 'openssl' -d 'libpcre3' -d 'procps' -d 'perl'"
   FINAL_FILE_NAME_SUFFIX=".${DEBIAN_VERSION}_all.deb"
 else
   echo "Unsupported platform"
@@ -159,14 +158,9 @@ if [ "$(uname)" = "Darwin" ]; then
   make install INSTALL_TOP=$OUT/usr/local
   cd $OUT
 
-  # Install dnsmasq
-  cd $TMP
-  wget http://www.thekelleys.org.uk/dnsmasq/dnsmasq-$DNSMASQ_VERSION.tar.gz
-  tar xzf dnsmasq-$DNSMASQ_VERSION.tar.gz
-  cd dnsmasq-$DNSMASQ_VERSION
-  make
-  make install DESTDIR=$OUT
-  cd $OUT
+  # Copy libcrypto
+  mkdir -p $OUT/usr/local/lib/
+  cp /usr/local/lib/libcrypto.1.1.dylib $OUT/usr/local/lib/libcrypto.1.1.dylib
 
   OPENRESTY_CONFIGURE=$OPENRESTY_CONFIGURE" --with-cc-opt=-I$OUT/usr/local/include --with-ld-opt=-L$OUT/usr/local/lib -j8"
 fi
@@ -256,7 +250,6 @@ post_install_script=$(mktemp $MKTEMP_POSTSCRIPT_CONF)
 echo "#!/bin/sh
 mkdir -p /etc/kong
 mv /usr/local/lib/luarocks/rocks/kong/$rockspec_version/kong.conf.default /etc/kong/kong.conf.default
-echo \"user=root\" > /etc/dnsmasq.conf
 chmod -R 777 /usr/local/kong/
 " > $post_install_script
 
