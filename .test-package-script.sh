@@ -71,12 +71,14 @@ if ! [ `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8001/cluster/` =
 fi
 
 RANDOM_API_NAME=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1`
-RESPONSE=`curl -s -o /dev/null -w "%{http_code}" -d "name=$RANDOM_API_NAME&request_host=$RANDOM_API_NAME.com&upstream_url=http://mockbin.org/" http://127.0.0.1:8001/apis/`
+RESPONSE=`curl -s -o /dev/null -w "%{http_code}" -d "name=$RANDOM_API_NAME&hosts=$RANDOM_API_NAME.com&upstream_url=http://mockbin.org/" http://127.0.0.1:8001/apis/`
 if ! [ $RESPONSE == "201" ]; then
   echo "Can't create API"
   cat /usr/local/kong/logs/error.log
   exit 1
 fi
+
+sleep 3
 
 RESPONSE=`curl -s -o /dev/null -w "%{http_code}" -H "Host: $RANDOM_API_NAME.com" http://127.0.0.1:8000/request`
 if ! [ $RESPONSE == "200" ]; then

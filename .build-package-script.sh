@@ -32,11 +32,11 @@ mkdir -p $TMP
 # Load dependencies versions
 LUA_VERSION=5.1.4
 LUAJIT_VERSION=2.1.0-beta2
-PCRE_VERSION=8.38
+PCRE_VERSION=8.40
 LUAROCKS_VERSION=2.4.1
-OPENRESTY_VERSION=1.11.2.1
+OPENRESTY_VERSION=1.11.2.2
 OPENSSL_VERSION=1.0.2j
-SERF_VERSION=0.7.0
+SERF_VERSION=0.8.0
 
 # Variables to be used in the build process
 PACKAGE_TYPE=""
@@ -53,7 +53,7 @@ FINAL_BUILD_OUTPUT="/build-data/build-output"
 
 if [ "$(uname)" = "Darwin" ]; then
   brew install gpg
-  brew install ruby
+  #brew install ruby
 
   PACKAGE_TYPE="osxpkg"
   LUA_MAKE="macosx"
@@ -129,7 +129,7 @@ tar xzf openssl-$OPENSSL_VERSION.tar.gz
 if [ "$(uname)" = "Darwin" ]; then # Checking if OS X
   export KERNEL_BITS=64 # This sets the right OpenSSL variable for OS X
 fi
-OPENRESTY_CONFIGURE="--with-openssl=$TMP/openssl-$OPENSSL_VERSION"
+OPENRESTY_CONFIGURE="--with-openssl=$TMP/openssl-$OPENSSL_VERSION --without-luajit-lua52"
 
 # Install fpm
 gem install fpm
@@ -159,8 +159,8 @@ if [ "$(uname)" = "Darwin" ]; then
   cd $OUT
 
   # Copy libcrypto
-  mkdir -p $OUT/usr/local/lib/
-  cp /usr/local/lib/libcrypto.1.1.dylib $OUT/usr/local/lib/libcrypto.1.1.dylib
+  # mkdir -p $OUT/usr/local/lib/
+  # cp /usr/local/lib/libcrypto.1.1.dylib $OUT/usr/local/lib/libcrypto.1.1.dylib
 
   OPENRESTY_CONFIGURE=$OPENRESTY_CONFIGURE" --with-cc-opt=-I$OUT/usr/local/include --with-ld-opt=-L$OUT/usr/local/lib -j8"
 fi
