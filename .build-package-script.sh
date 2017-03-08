@@ -68,7 +68,7 @@ elif hash yum 2>/dev/null; then
   yum -y install epel-release
   yum -y install wget tar make curl ldconfig gcc perl pcre-devel openssl-devel ldconfig unzip git rpm-build ncurses-devel which lua-$LUA_VERSION lua-devel-$LUA_VERSION gpg pkgconfig xz-devel ruby-devel
 
-  FPM_PARAMS="-d 'epel-release' -d 'nc' -d 'openssl' -d 'pcre' -d 'perl'"
+  FPM_PARAMS="-d 'epel-release' -d 'openssl' -d 'pcre' -d 'perl'"
   if [[ $IS_AWS == true ]]; then
     FPM_PARAMS=$FPM_PARAMS" -d 'openssl098e'"
     FINAL_FILE_NAME_SUFFIX=".aws.rpm"
@@ -105,7 +105,7 @@ elif hash apt-get 2>/dev/null; then
   DEBIAN_VERSION=`lsb_release -cs`
   PACKAGE_TYPE="deb"
   LUA_MAKE="linux"
-  FPM_PARAMS="-d 'netcat' -d 'openssl' -d 'libpcre3' -d 'procps' -d 'perl'"
+  FPM_PARAMS="-d 'openssl' -d 'libpcre3' -d 'procps' -d 'perl'"
   FINAL_FILE_NAME_SUFFIX=".${DEBIAN_VERSION}_all.deb"
 else
   echo "Unsupported platform"
