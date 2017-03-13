@@ -117,7 +117,8 @@ function echoResponse {
 }
 
 KONG_GITHUB_LOC="https://github.com/Mashape/kong/releases/download/"
-KONG_MAJOR_VERSION=`echo $KONG_VERSION | sed 's/\([0-9].[0-9]\).*/\1.x/'`
+KONG_MAJOR_VERSION=`echo $KONG_VERSION | sed 's/\([0-9]*.[0-9]*\).*/\1.x/'`
+echo $KONG_MAJOR_VERSION
 function createRepo {
   REPO_NAME=$1
   REPO_TYPE=$2
@@ -170,7 +171,7 @@ do
       wget -O $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb https://github.com/Mashape/kong/releases/download/$KONG_VERSION/kong-$KONG_VERSION.$VERSION$ALL.deb
 	    if [ -e $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb ]; then
         REPO_STATUS=$(createRepo "kong-$OS-$VERSION-$KONG_MAJOR_VERSION" "debian" "$OS-$VERSION")
-        RESPONSE=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-$OS-$VERSION-$KONG_MAJOR_VERSION/$OS-$VERSION/$KONG_VERSION/dists/kong-$KONG_VERSION.$VERSION$ALL.deb;deb_distribution=$VERSION;deb_component=main;deb_architecture=i386,amd64,noarch;publish=1&override=1" -T $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb)
+        RESPONSE=$(curl -X PUT --write-out =%{http_code} --silent --output - -u  $BINTRAY_USERNAME:$BINTRAY_KEY  "https://api.bintray.com/content/mashape/kong-$OS-$VERSION-$KONG_MAJOR_VERSION/$OS-$VERSION/$KONG_VERSION/dists/kong-$KONG_VERSION.$VERSION$ALL.deb;deb_distribution=$VERSION;deb_component=main;deb_architecture=i386,amd64,noarch;publish=1;override=1" -T $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb)
         echo $(echoResponse "$RESPONSE")
       else
         echo "Artifact $DIR/build-output/kong-$KONG_VERSION.$VERSION$ALL.deb not found" 
