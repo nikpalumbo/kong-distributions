@@ -129,7 +129,12 @@ tar xzf openssl-$OPENSSL_VERSION.tar.gz
 if [ "$(uname)" = "Darwin" ]; then # Checking if OS X
   export KERNEL_BITS=64 # This sets the right OpenSSL variable for OS X
 fi
-OPENRESTY_CONFIGURE="--with-openssl=$TMP/openssl-$OPENSSL_VERSION --without-luajit-lua52"
+
+# PCRE for JITy goodness
+wget https://ftp.pcre.org/pub/pcre/pcre-$PCRE_VERSION.tar.gz -O pcre-$PCRE_VERSION.tar.gz
+tar xzf pcre-$PCRE_VERSION.tar.gz
+
+OPENRESTY_CONFIGURE="--with-openssl=$TMP/openssl-$OPENSSL_VERSION --with-pcre=$TMP/pcre-$PCRE_VERSION --without-luajit-lua52"
 
 # Install fpm
 gem install fpm
