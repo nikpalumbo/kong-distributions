@@ -169,7 +169,7 @@ cd $TMP
 wget https://openresty.org/download/openresty-$OPENRESTY_VERSION.tar.gz
 tar xzf openresty-$OPENRESTY_VERSION.tar.gz
 cd openresty-$OPENRESTY_VERSION
-./configure --with-pcre-jit --with-ipv6 --with-http_realip_module --with-http_ssl_module --with-http_stub_status_module ${OPENRESTY_CONFIGURE}
+./configure --with-pcre-jit --with-ipv6 --with-http_realip_module --with-http_ssl_module --with-http_stub_status_module --with-http_v2_module ${OPENRESTY_CONFIGURE}
 make
 make install DESTDIR=$OUT
 
